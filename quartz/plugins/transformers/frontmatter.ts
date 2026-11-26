@@ -73,6 +73,9 @@ export const FrontMatter: QuartzTransformerPlugin<Partial<Options>> = (userOpts)
 
             if (data.title != null && data.title.toString() !== "") {
               data.title = data.title.toString()
+            } else if (file.stem === "index" && file.dirname) {
+              // folder pages without a title are named after their folder (not "index")
+              data.title = file.dirname.split(/[\/]/).pop() || file.stem
             } else {
               data.title = file.stem ?? i18n(cfg.configuration.locale).propertyDefaults.title
             }

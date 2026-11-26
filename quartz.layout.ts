@@ -1,4 +1,3 @@
-import { title } from "node:process"
 import { PageLayout, SharedLayout } from "./quartz/cfg"
 import * as Component from "./quartz/components"
 import { Options } from "./quartz/components/Explorer"
@@ -13,15 +12,15 @@ export const sortFn: Options["sortFn"] = (a, b) => {
   // mod: sort folders and files based on folderOrder and noteOrder
   //      to find ways to retrieve folderOrder and noteOrder from frontmatter
   //      we now have to include frontmatter in ContentDetails and linkIndex.set()
- 
+
   // extract order from frontmatter
   const orderA = a.isFolder
-    ? a.data?.frontmatter?.folderOrder as number | undefined
-    : a.data?.frontmatter?.noteOrder as number | undefined
+    ? (a.data?.frontmatter?.folderOrder as number | undefined)
+    : (a.data?.frontmatter?.noteOrder as number | undefined)
   const orderB = b.isFolder
-    ? b.data?.frontmatter?.folderOrder as number | undefined
-    : b.data?.frontmatter?.noteOrder as number | undefined
-     // method II: sort folders together with files, treat folders as files
+    ? (b.data?.frontmatter?.folderOrder as number | undefined)
+    : (b.data?.frontmatter?.noteOrder as number | undefined)
+  // method II: sort folders together with files, treat folders as files
   // compare orderA and orderB, those undefined will be placed at the end
   if (orderA !== undefined && orderB !== undefined) {
     return orderA - orderB
@@ -36,15 +35,22 @@ export const sortFn: Options["sortFn"] = (a, b) => {
 // components shared across all pages
 export const sharedPageComponents: SharedLayout = {
   head: Component.Head(),
-  header: [],
-  afterBody: [],
+  // rendered in the full-width top bar
+  header: [Component.PageTitle(), Component.Search(), Component.Darkmode()],
+  afterBody: [Component.ChapterIndex({ mode: "home" }), Component.BookNav()],
   footer: Component.Footer({
-    links: {
-      GitHub: "https://github.com/jackyzha0/quartz",
-      "Discord Community": "https://discord.gg/cRFFHYye7t",
-    },
+    links: {},
   }),
 }
+
+const explorer = () =>
+  Component.Explorer({
+    title: "Contents",
+    folderClickBehavior: "link",
+    mapFn,
+    filterFn,
+    sortFn,
+  })
 
 // components for pages that display a single page (e.g. a single note)
 export const defaultContentPageLayout: PageLayout = {
@@ -54,60 +60,29 @@ export const defaultContentPageLayout: PageLayout = {
       condition: (page) => page.fileData.slug !== "index",
     }),
     Component.ArticleTitle(),
-    Component.ContentMeta(),
+    Component.ConditionalRender({
+      component: Component.ContentMeta({ showDate: false }),
+      condition: (page) => page.fileData.slug !== "index",
+    }),
     Component.TagList(),
   ],
-  left: [
-    Component.PageTitle(),
-    Component.MobileOnly(Component.Spacer()),
-    Component.Flex({
-      components: [
-        {
-          Component: Component.Search(),
-          grow: true,
-        },
-        { Component: Component.Darkmode() },
-        { Component: Component.ReaderMode() },
-      ],
-    }),
-    Component.Explorer({
-      title: "Explorer",
-      mapFn,
-      filterFn,
-      sortFn,
-    
-    }),
-  ],
+  left: [explorer()],
   right: [
-    Component.Graph(),
-    Component.DesktopOnly(Component.TableOfContents({
-      
-      layout : "modern",
-    })),
-    Component.Backlinks(),
+    Component.DesktopOnly(
+      Component.TableOfContents({
+        layout: "modern",
+      }),
+    ),
   ],
 }
 
 // components for pages that display lists of pages  (e.g. tags or folders)
 export const defaultListPageLayout: PageLayout = {
-  beforeBody: [Component.Breadcrumbs(), Component.ArticleTitle(), Component.ContentMeta()],
-  left: [
-    Component.PageTitle(),
-    Component.MobileOnly(Component.Spacer()),
-    Component.Flex({
-      components: [
-        {
-          Component: Component.Search(),
-          grow: true,
-        },
-        { Component: Component.Darkmode() },
-      ],
-    }),
-    Component.Explorer({
-      mapFn,
-      filterFn,
-      sortFn,
-    }),
+  beforeBody: [
+    Component.Breadcrumbs(),
+    Component.ArticleTitle(),
+    Component.ChapterIndex({ mode: "folder" }),
   ],
+  left: [explorer()],
   right: [],
 }
